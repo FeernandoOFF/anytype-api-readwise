@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// ReadwiseClient implements the BookmarksProvider interface
 type ReadwiseClient struct {
 	token      string
 	baseURL    string

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -14,6 +15,7 @@ type AnytypeClient struct {
 	baseURL    string
 	version    string
 	httpClient *http.Client
+	config     *Config
 }
 
 type AnytypeSpace struct {
@@ -80,13 +82,54 @@ type ObjectIcon struct {
 	Format string `json:"format"`
 }
 
-func NewAnytypeClient(apiKey, baseURL, version string) *AnytypeClient {
+func NewAnytypeClient(apiKey, baseURL, version string, config *Config) *AnytypeClient {
 	return &AnytypeClient{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		version: version,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
+		},
+		config: config,
+	}
+}
+
+// GetSpaceID returns the space ID from config or the first one in the list
+func (c *AnytypeClient) GetSpaceID() (string, error) {
+	if c.config.SpaceID != "" {
+		return c.config.SpaceID, nil
+	}
+
+	spaces, err := c.GetSpaces()
+	if err != nil {
+		return "", err
+	}
+
+	if len(spaces) == 0 {
+		return "", fmt.Errorf("no spaces found")
+	}
+
+	// Use the first space if none specified
+	defaultSpace := spaces[0]
+	fmt.Printf("Using space: %s (ID: %s)\n", defaultSpace.Name, defaultSpace.ID)
+	return defaultSpace.ID, nil
+}
+
+// CreateBookObjectRequest creates a CreateObjectRequest for a book
+func (c *AnytypeClient) CreateBookObjectRequest(book ReadwiseBook, content string) CreateObjectRequest {
+	return CreateObjectRequest{
+		Name:    fmt.Sprintf("%s - %s [SYNC]", book.Title, book.Author),
+		TypeKey: c.config.ObjectType,
+		Body:    content,
+		Icon: &ObjectIcon{
+			Emoji:  "📚",
+			Format: "emoji",
+		},
+		Properties: []Property{
+			{
+				Key:   "description",
+				Value: strconv.Itoa(book.ID),
+			},
 		},
 	}
 }
