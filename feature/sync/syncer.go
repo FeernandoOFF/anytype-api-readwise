@@ -1,18 +1,22 @@
-package main
+package sync
 
 import (
+	"anytype-readwise/core"
+	"anytype-readwise/feature/bookmarks"
+	"anytype-readwise/feature/notes"
+	"anytype-readwise/feature/templates"
 	"fmt"
 	"time"
 )
 
 type Syncer struct {
-	bookmarksProvider BookmarksProvider
-	anytypeClient     *AnytypeClient
-	templateProvider  TemplateProvider
-	config            *Config
+	bookmarksProvider bookmarks.BookmarksProvider
+	anytypeClient     *notes.AnytypeClient
+	templateProvider  templates.TemplateProvider
+	config            *core.Config
 }
 
-func NewSyncer(bookmarksProvider BookmarksProvider, anytypeClient *AnytypeClient, templateProvider TemplateProvider, config *Config) *Syncer {
+func NewSyncer(bookmarksProvider bookmarks.BookmarksProvider, anytypeClient *notes.AnytypeClient, templateProvider templates.TemplateProvider, config *core.Config) *Syncer {
 	return &Syncer{
 		bookmarksProvider: bookmarksProvider,
 		anytypeClient:     anytypeClient,
@@ -41,7 +45,7 @@ func (s *Syncer) Sync() error {
 	fmt.Printf("Found %d books\n", len(books))
 
 	//for i, book := range books {
-	i := 5
+	i := 6
 	book := books[i]
 	fmt.Printf("Processing book %d/%d: %s by %s\n", i+1, len(books), book.Title, book.Author)
 
@@ -49,13 +53,13 @@ func (s *Syncer) Sync() error {
 	highlights, err := s.bookmarksProvider.GetHighlights(book.ID)
 	if err != nil {
 		fmt.Printf("Warning: failed to fetch highlights for book %s: %v\n", book.Title, err)
-		highlights = []Highlight{} // Continue with empty highlights
+		highlights = []bookmarks.Highlight{} // Continue with empty highlights
 	}
 
 	fmt.Printf("Found %d highlights\n", len(highlights))
 
 	// Render the template
-	templateData := TemplateData{
+	templateData := templates.TemplateData{
 		Book:       book,
 		Highlights: highlights,
 		SyncDate:   time.Now().Format("January 2, 2006"),

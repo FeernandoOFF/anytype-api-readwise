@@ -1,7 +1,9 @@
 // anytype.go
-package main
+package notes
 
 import (
+	"anytype-readwise/core"
+	"anytype-readwise/feature/bookmarks"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -15,7 +17,7 @@ type AnytypeClient struct {
 	baseURL    string
 	version    string
 	httpClient *http.Client
-	config     *Config
+	config     *core.Config
 }
 
 type AnytypeSpace struct {
@@ -82,7 +84,7 @@ type ObjectIcon struct {
 	Format string `json:"format"`
 }
 
-func NewAnytypeClient(apiKey, baseURL, version string, config *Config) *AnytypeClient {
+func NewAnytypeClient(apiKey, baseURL, version string, config *core.Config) *AnytypeClient {
 	return &AnytypeClient{
 		apiKey:  apiKey,
 		baseURL: baseURL,
@@ -110,13 +112,13 @@ func (c *AnytypeClient) GetSpaceID() (string, error) {
 	}
 
 	// Use the first space if none specified
-	defaultSpace := spaces[0]
+	defaultSpace := spaces[1]
 	fmt.Printf("Using space: %s (ID: %s)\n", defaultSpace.Name, defaultSpace.ID)
 	return defaultSpace.ID, nil
 }
 
 // CreateBookObjectRequest creates a CreateObjectRequest for a book
-func (c *AnytypeClient) CreateBookObjectRequest(book ReadwiseBook, content string) CreateObjectRequest {
+func (c *AnytypeClient) CreateBookObjectRequest(book bookmarks.ReadwiseBook, content string) CreateObjectRequest {
 	return CreateObjectRequest{
 		Name:    fmt.Sprintf("%s - %s [SYNC]", book.Title, book.Author),
 		TypeKey: c.config.ObjectType,

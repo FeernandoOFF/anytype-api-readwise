@@ -1,5 +1,5 @@
 // readwise.go
-package main
+package bookmarks
 
 import (
 	"encoding/json"

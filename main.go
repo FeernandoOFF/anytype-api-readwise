@@ -1,13 +1,16 @@
-// main.go
 package main
 
 import (
+	"anytype-readwise/core"
+	"anytype-readwise/feature/bookmarks"
+	"anytype-readwise/feature/notes"
+	"anytype-readwise/feature/sync"
+	"anytype-readwise/feature/templates"
 	"flag"
 	"fmt"
+	"github.com/joho/godotenv"
 	"log"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -24,74 +27,45 @@ func main() {
 	flag.Parse()
 
 	// Initialize configuration
-	config := &Config{
+	config := &core.Config{
 		ReadwiseToken:     os.Getenv("READWISE_TOKEN"),
 		AnytypeAPIKey:     os.Getenv("ANYTYPE_API_KEY"),
-		AnytypeBaseURL:    getEnvOrDefault("ANYTYPE_API_BASE_URL", "http://localhost:31009"),
-		AnytypeVersion:    getEnvOrDefault("ANYTYPE_VERSION", "2025-05-20"),
+		AnytypeBaseURL:    core.GetEnvOrDefault("ANYTYPE_API_BASE_URL", "http://localhost:31009"),
+		AnytypeVersion:    core.GetEnvOrDefault("ANYTYPE_VERSION", "2025-05-20"),
 		TemplatePath:      *templatePath,
 		AnytypeTemplateID: *anytypeTemplateID,
 		ObjectType:        *objectType,
 		SpaceID:           *spaceID,
 	}
 
-	if err := validateConfig(config); err != nil {
+	if err := core.ValidateConfig(config); err != nil {
 		log.Fatal("Configuration error:", err)
 	}
 
 	// Initialize services
 	// Create a BookmarksProvider (ReadwiseClient)
-	bookmarksProvider := NewReadwiseClient(config.ReadwiseToken)
+	bookmarksProvider := bookmarks.NewReadwiseClient(config.ReadwiseToken)
 
 	// Create an AnytypeClient
-	anytypeClient := NewAnytypeClient(config.AnytypeAPIKey, config.AnytypeBaseURL, config.AnytypeVersion, config)
+	anytypeClient := notes.NewAnytypeClient(config.AnytypeAPIKey, config.AnytypeBaseURL, config.AnytypeVersion, config)
 
 	// Create a TemplateProvider based on configuration
-	var templateProvider TemplateProvider
+	var templateProvider templates.TemplateProvider
 	if config.AnytypeTemplateID != "" {
 		// Use AnytypeTemplateProvider if a template ID is provided
-		templateProvider = NewAnytypeTemplateProvider(anytypeClient, config.AnytypeTemplateID)
+		templateProvider = templates.NewAnytypeTemplateProvider(anytypeClient, config.AnytypeTemplateID)
 		fmt.Println("Using Anytype template with ID:", config.AnytypeTemplateID)
 	} else {
 		// Use MarkdownTemplateProvider as fallback
-		templateProvider = NewMarkdownTemplateProvider(config.TemplatePath)
+		templateProvider = templates.NewMarkdownTemplateProvider(config.TemplatePath)
 		fmt.Println("Using markdown template from:", config.TemplatePath)
 	}
 
 	// Create syncer and run
-	syncer := NewSyncer(bookmarksProvider, anytypeClient, templateProvider, config)
+	syncer := sync.NewSyncer(bookmarksProvider, anytypeClient, templateProvider, config)
 	if err := syncer.Sync(); err != nil {
 		log.Fatal("Sync failed:", err)
 	}
 
 	fmt.Println("Sync completed successfully!")
-}
-
-func getEnvOrDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-func validateConfig(config *Config) error {
-	if config.ReadwiseToken == "" {
-		return fmt.Errorf("READWISE_TOKEN environment variable is required")
-	}
-	if config.AnytypeAPIKey == "" {
-		return fmt.Errorf("ANYTYPE_API_KEY environment variable is required")
-	}
-
-	// Ensure at least one template option is provided
-	if config.AnytypeTemplateID == "" {
-		// If no Anytype template ID is provided, check for a valid markdown template
-		if config.TemplatePath == "" {
-			return fmt.Errorf("either a markdown template path or an Anytype template ID must be provided")
-		}
-		if _, err := os.Stat(config.TemplatePath); os.IsNotExist(err) {
-			return fmt.Errorf("template file not found: %s", config.TemplatePath)
-		}
-	}
-
-	return nil
 }
