@@ -69,14 +69,13 @@ func (s *Syncer) Sync() error {
 		return fmt.Errorf("failed to render template for book %s: %w", book.Title, err)
 	}
 
-	// Create object in Anytype
-	createReq := s.anytypeClient.CreateBookObjectRequest(book, content)
-	obj, err := s.anytypeClient.CreateObject(spaceID, createReq)
+	// Create or update object in Anytype
+	obj, err := s.anytypeClient.CreateOrUpdateNoteFromBook(spaceID, book, content)
 	if err != nil {
-		return fmt.Errorf("failed to create object for book %s: %w", book.Title, err)
+		return fmt.Errorf("failed to create or update object for book %s: %w", book.Title, err)
 	}
 
-	fmt.Printf("Created object: %s (ID: %s)\n", obj.Name, obj.ID)
+	fmt.Printf("Created or updated object: %s (ID: %s)\n", obj.Name, obj.ID)
 	//}
 
 	return nil

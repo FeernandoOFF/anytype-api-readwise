@@ -22,7 +22,7 @@ func main() {
 	// Command line flags
 	templatePath := flag.String("template", "book_template.md", "Path to markdown template file")
 	anytypeTemplateID := flag.String("anytype-template", "", "Anytype template ID (optional)")
-	objectType := flag.String("type", "bookmark", "Anytype object type to create")
+	objectType := flag.String("type", "Bookmark", "Anytype object type to create")
 	spaceID := flag.String("space", "", "Anytype space ID (optional)")
 	flag.Parse()
 
