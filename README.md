@@ -6,6 +6,7 @@ This script synchronizes your bookmarks from Readwise/Reader to your Anytype spa
 
 The main purpose of this script is to automate the process of saving your Readwise bookmarks into your Anytype knowledge base. You can customize the type of object created, the space it's saved in, and the template used for its content.
 
+![](./demo.gif)
 
 
 ## Setup and Configuration
