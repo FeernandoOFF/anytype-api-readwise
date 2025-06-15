@@ -31,7 +31,7 @@ func (c *AnytypeClient) GetSpaceID() (string, error) {
 	}
 
 	// Use the first space if none specified
-	defaultSpace := spaces[1]
+	defaultSpace := spaces[0]
 	fmt.Printf("Using space: %s (ID: %s)\n", defaultSpace.Name, defaultSpace.ID)
 	return defaultSpace.ID, nil
 }

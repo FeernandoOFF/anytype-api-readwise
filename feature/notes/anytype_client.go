@@ -67,22 +67,26 @@ func (c *AnytypeClient) CreateOrUpdateNoteFromBook(spaceID string, book bookmark
 		for _, prop := range obj.Properties {
 			if prop.Key == "description" {
 				if prop.Value == strconv.Itoa(book.ID) {
-					fmt.Println("Found Object!:", book.Title, prop.Value)
-					// Update Object
+					fmt.Println("Found a matching note!:", book.Title, prop.Value)
+					req := c.CreateBookUpdateRequest(book, obj)
+					updatedObject, err := c.UpdateObject(spaceID, obj.ID, req)
+					if err != nil {
+						fmt.Println("Failed to update object:", err)
+						return nil, nil // Currently fails to update
+					}
+					return updatedObject, nil
 				}
 
 			}
 
 		}
-		//fmt.Println("Getting Properties of:", obj)
 	}
 
-	return nil, fmt.Errorf("failed to create object: %w", err)
-	//req := c.CreateBookObjectRequest(book, content)
-	//_, err = c.CreateObject(spaceID, req)
-	//if err != nil {
-	//	return nil, fmt.Errorf("failed to create object: %w", err)
-	//}
-	//object := x.toAnytypeObject()
-	//return &object, err
+	req := c.CreateBookObjectRequest(book, content)
+	createdObject, err := c.CreateObject(spaceID, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create object: %w", err)
+	}
+	object := createdObject.toAnytypeObject()
+	return &object, err
 }

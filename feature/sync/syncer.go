@@ -29,7 +29,15 @@ func (s *Syncer) Sync() error {
 	fmt.Println("Starting bookmark sync to Anytype...")
 
 	// Get space ID
-	spaceID, err := s.anytypeClient.GetSpaceID()
+	var spaceID string
+	var err error
+	if s.config.SpaceID == "" {
+		fmt.Println("No space ID specified, using first space in list...")
+		spaceID, err = s.anytypeClient.GetSpaceID()
+	} else {
+		spaceID = s.config.SpaceID
+	}
+
 	fmt.Println("Space ID:", spaceID)
 	if err != nil {
 		return fmt.Errorf("failed to get space ID: %w", err)
@@ -44,39 +52,38 @@ func (s *Syncer) Sync() error {
 
 	fmt.Printf("Found %d books\n", len(books))
 
-	//for i, book := range books {
-	i := 6
-	book := books[i]
-	fmt.Printf("Processing book %d/%d: %s by %s\n", i+1, len(books), book.Title, book.Author)
+	for i, book := range books {
+		fmt.Printf("Processing book %d/%d: %s by %s\n", i+1, len(books), book.Title, book.Author)
 
-	// Fetch highlights for this book
-	highlights, err := s.bookmarksProvider.GetHighlights(book.ID)
-	if err != nil {
-		fmt.Printf("Warning: failed to fetch highlights for book %s: %v\n", book.Title, err)
-		highlights = []bookmarks.Highlight{} // Continue with empty highlights
+		// Fetch highlights for this book
+		highlights, err := s.bookmarksProvider.GetHighlights(book.ID)
+		if err != nil {
+			fmt.Printf("Warning: failed to fetch highlights for book %s: %v\n", book.Title, err)
+			highlights = []bookmarks.Highlight{} // Continue with empty highlights
+		}
+
+		fmt.Printf("Found %d highlights\n", len(highlights))
+
+		// Render the template
+		templateData := templates.TemplateData{
+			Book:       book,
+			Highlights: highlights,
+			SyncDate:   time.Now().Format("January 2, 2006"),
+		}
+		content, err := s.templateProvider.Render(templateData)
+		if err != nil {
+			return fmt.Errorf("failed to render template for book %s: %w", book.Title, err)
+		}
+
+		// Create or update object in Anytype
+		obj, err := s.anytypeClient.CreateOrUpdateNoteFromBook(spaceID, book, content)
+		if err != nil {
+			return fmt.Errorf("failed to create or update object for book %s: %w", book.Title, err)
+		}
+		if obj == nil {
+			fmt.Printf("Created or updated object: %s (ID: %s)\n", obj.Name, obj.ID)
+		}
 	}
-
-	fmt.Printf("Found %d highlights\n", len(highlights))
-
-	// Render the template
-	templateData := templates.TemplateData{
-		Book:       book,
-		Highlights: highlights,
-		SyncDate:   time.Now().Format("January 2, 2006"),
-	}
-	content, err := s.templateProvider.Render(templateData)
-	if err != nil {
-		return fmt.Errorf("failed to render template for book %s: %w", book.Title, err)
-	}
-
-	// Create or update object in Anytype
-	obj, err := s.anytypeClient.CreateOrUpdateNoteFromBook(spaceID, book, content)
-	if err != nil {
-		return fmt.Errorf("failed to create or update object for book %s: %w", book.Title, err)
-	}
-
-	fmt.Printf("Created or updated object: %s (ID: %s)\n", obj.Name, obj.ID)
-	//}
 
 	return nil
 }
